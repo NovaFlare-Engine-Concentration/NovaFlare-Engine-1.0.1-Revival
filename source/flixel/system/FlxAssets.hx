@@ -1,5 +1,6 @@
 package flixel.system;
 
+import haxe.io.Path;
 import haxe.macro.Expr;
 
 import openfl.display.BitmapData;
@@ -289,6 +290,15 @@ class FlxAssets
 	public static inline function getBitmapFromClass(source:Class<Dynamic>):BitmapData
 	{
 		return Type.createInstance(source, []);
+	}
+
+		public static function getSoundAddExtension(id:String, useCache = true):Sound
+	{
+		final needsExt = Path.extension(id).length == 0;
+		if (needsExt)
+			id += "." + defaultSoundExtension;
+
+		return FlxG.assets.getSoundUnsafe(id, useCache);
 	}
 
 	/**

@@ -34,14 +34,13 @@ class GraphicsSettingsSubState extends BaseOptionsMenu
 	public function new()
 	{
 		title = 'Graphics';
-		rpcTitle = 'Graphics Settings Menu'; //for Discord Rich Presence
+		rpcTitle = 'Graphics Settings Menu';
 
-		//I'd suggest using "Low Quality" as an example for making your own option since it is the simplest here
-		var option:Option = new Option('Low Quality', //Name
-			'If checked, disables some background details,\ndecreases loading times and improves performance.', //Description
-			'lowQuality', //Save data variable name
-			'bool', //Variable type
-			false); //Default value
+		var option:Option = new Option('Low Quality',
+			'If checked, disables some background details,\ndecreases loading times and improves performance.',
+			'lowQuality',
+			'bool',
+			false);
 		addOption(option);
 
 		var option:Option = new Option('Anti-Aliasing',
@@ -50,33 +49,57 @@ class GraphicsSettingsSubState extends BaseOptionsMenu
 			'bool',
 			true);
 		option.showBoyfriend = true;
-		option.onChange = onChangeAntiAliasing; //Changing onChange is only needed if you want to make a special interaction after it changes the value
-		addOption(option);
-		
-		
-
-		var option:Option = new Option('Shaders', //Name
-			'If unchecked, disables shaders.\nIt\'s used for some visual effects, and also CPU intensive for weaker PCs.', //Description
-			'shaders', //Save data variable name
-			'bool', //Variable type
-			true); //Default value
+		option.onChange = onChangeAntiAliasing;
 		addOption(option);
 
-		#if !html5 //Apparently other framerates isn't correctly supported on Browser? Probably it has some V-Sync shit enabled by default, idk
+		var option:Option = new Option('Shaders',
+			'If unchecked, disables shaders.\nIt\'s used for some visual effects, and also CPU intensive for weaker PCs.',
+			'shaders',
+			'bool',
+			true);
+		addOption(option);
+
+		#if !html5
 		var option:Option = new Option('Framerate',
 			"Pretty self explanatory, isn't it?",
 			'framerate',
 			'int',
 			60);
 		addOption(option);
-
 		option.minValue = 60;
 		option.maxValue = 360;
 		option.displayFormat = '%v FPS';
 		option.onChange = onChangeFramerate;
 		#end
-		
-		
+
+		var option:Option = new Option('Draw Framerate',
+			'Maximum rendering framerate.\nSet this to match your monitor refresh rate for smoother visuals.',
+			'drawFramerate',
+			'int',
+			120);
+		addOption(option);
+		option.minValue = 30;
+		option.maxValue = 360;
+		option.displayFormat = '%v FPS';
+		option.onChange = onChangeDrawFramerate;
+	
+		var option:Option = new Option('Lock Render',
+			'If checked, limits rendering to Draw Framerate.\nTurn OFF for maximum FPS (may cause screen tearing).',
+			'lockRender',
+			'bool',
+			false);
+		option.onChange = onChangeLockRender;
+		addOption(option);
+
+		#if sys
+		var option:Option = new Option('Render Thread',
+			'If checked, enables multithreaded rendering.\nCan improve performance on multi-core CPUs.',
+			'renderThread',
+			'bool',
+			true);
+		option.onChange = onChangeRenderThread;
+		addOption(option);
+		#end
 
 		super();
 	}
@@ -85,8 +108,8 @@ class GraphicsSettingsSubState extends BaseOptionsMenu
 	{
 		for (sprite in members)
 		{
-			var sprite:Dynamic = sprite; //Make it check for FlxSprite instead of FlxBasic
-			var sprite:FlxSprite = sprite; //Don't judge me ok
+			var sprite:Dynamic = sprite;
+			var sprite:FlxSprite = sprite;
 			if(sprite != null && (sprite is FlxSprite) && !(sprite is FlxText)) {
 				sprite.antialiasing = ClientPrefs.globalAntialiasing;
 			}
@@ -95,15 +118,35 @@ class GraphicsSettingsSubState extends BaseOptionsMenu
 
 	function onChangeFramerate()
 	{
-		if(ClientPrefs.framerate > FlxG.drawFramerate)
-		{
-			FlxG.updateFramerate = ClientPrefs.framerate;
-			FlxG.drawFramerate = ClientPrefs.framerate;
+		FlxG.updateFramerate = ClientPrefs.framerate;
+		if (FlxG.updateFramerate < FlxG.drawFramerate) {
+			FlxG.updateFramerate = FlxG.drawFramerate;
 		}
-		else
-		{
-			FlxG.drawFramerate = ClientPrefs.framerate;
-			FlxG.updateFramerate = ClientPrefs.framerate;
+	}
+
+	function onChangeDrawFramerate()
+	{
+		FlxG.drawFramerate = ClientPrefs.drawFramerate;
+		#if sys
+		FlxG.stage.application.window.lockRender = ClientPrefs.lockRender;
+		#end
+
+		if (FlxG.drawFramerate > FlxG.updateFramerate) {
+			FlxG.updateFramerate = FlxG.drawFramerate;
 		}
+	}
+
+	function onChangeLockRender()
+	{
+		#if sys
+		FlxG.stage.application.window.lockRender = ClientPrefs.lockRender;
+		#end
+	}
+
+	function onChangeRenderThread()
+	{
+		#if sys
+		lime.graphics.opengl.GL.setMultiThreaded(ClientPrefs.renderThread);
+		#end
 	}
 }

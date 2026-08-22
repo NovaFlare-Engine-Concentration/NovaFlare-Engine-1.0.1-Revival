@@ -1,0 +1,81 @@
+name: WindowsBuild
+on: 
+  workflow_dispatch:
+  
+  workflow_call:
+
+jobs:
+  Windows:
+    runs-on: windows-latest
+    environment: ${{ github.repository == 'NovaFlare-Engine-Concentration/FNF-NovaFlare-Engine' && 'private-build' || 'public-build' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@main
+
+      - name: Setup Haxe
+        uses: krdlab/setup-haxe@master
+        with:
+          haxe-version: 4.3.7
+
+      - name: Restore private GameAnalytics
+        if: github.repository == 'NovaFlare-Engine-Concentration/FNF-NovaFlare-Engine' && github.event_name != 'pull_request' && github.event_name != 'pull_request_target'
+        shell: pwsh
+        env:
+          NOVA_GA_IMPL_B64: ${{ secrets.NOVA_GA_IMPL_B64 }}
+          NOVA_GA_TYPES_B64: ${{ secrets.NOVA_GA_TYPES_B64 }}
+          NOVA_GA_CONFIG_B64: ${{ secrets.NOVA_GA_CONFIG_B64 }}
+        run: ./tools/restore-private-gameanalytics.ps1 -Required
+
+      - name: Install Libraries
+        run: |
+          haxelib setup C:\haxelib
+          haxelib install hmm --quiet
+          haxelib run hmm install
+
+      - name: Extract current version
+        id: get_version
+        shell: pwsh
+        run: |
+          $content = Get-Content Project.xml -Raw
+          if ($content -match 'build-number="([^"]*)"') {
+              $CURRENT_VERSION = $matches[1]
+              echo "current_version=$CURRENT_VERSION" >> $env:GITHUB_OUTPUT
+              Write-Output "成功提取版本号: $CURRENT_VERSION"
+          } else {
+              Write-Error "在Project.xml中未找到build-number属性"
+              exit 1
+          }
+
+      - name: Enable Windows long path support
+        shell: pwsh
+        run: |
+          Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -Type DWord -Force
+          $check = Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled"
+          Write-Output "LongPathsEnabled = $($check.LongPathsEnabled)"
+
+      - name: Compile
+        shell: pwsh
+        run: |
+          $COMMIT_SHA = (git rev-parse --short HEAD)
+          $CURRENT_VERSION = "${{ steps.get_version.outputs.current_version }}"
+          
+          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+            $NEW_VERSION = $CURRENT_VERSION -replace "-dev", "-$COMMIT_SHA"
+            haxelib run lime build windows -Dlegacy_gc_compare -Dcommit_sha=$COMMIT_SHA -Dbuild_number=$NEW_VERSION
+          } else {
+            haxelib run lime build windows -Dlegacy_gc_compare -Dcommit_sha=$COMMIT_SHA -Dbuild_number=$CURRENT_VERSION
+          }
+          
+      - name: Create Windows zip package
+        shell: pwsh
+        run: | 
+          cd export\legacy-gc\windows\bin
+          Compress-Archive -Path * -DestinationPath windows.zip
+
+      - name: Upload Artifact
+        if: ${{ success() }}
+        uses: actions/upload-artifact@main
+        with:
+          name: windowsBuild
+          path: export\legacy-gc\windows\bin\windows.zip
+          if-no-files-found: error

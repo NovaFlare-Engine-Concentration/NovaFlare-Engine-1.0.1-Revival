@@ -22,11 +22,10 @@ import flixel.addons.ui.FlxUIAssets;
 import flixel.addons.ui.StrNameLabel;
 import flixel.addons.ui.FlxUI;
 
-#if android
 import flixel.input.actions.FlxActionInput;
 import android.AndroidControls.AndroidControls;
 import android.FlxVirtualPad;
-#end
+
 /*
 THIS IS AN EDIT OF FlxUIDropDownMenu I'VE MADE BECAUSE I'M TIRED OF IT NOT SUPPORTING SCROLLING UP/DOWN
 BAH!
@@ -43,8 +42,6 @@ The differences are the following:
 class FlxUIDropDownMenuCustom extends FlxUIGroup implements IFlxUIWidget implements IFlxUIClickable implements IHasParams
 {
     
-    
- 
 function getVirtualPad():FlxVirtualPad {
   for (th in FlxG.state) if (th is FlxVirtualPad) return cast(th, FlxVirtualPad);
   return null;
@@ -375,7 +372,7 @@ function getVirtualPad():FlxVirtualPad {
 
 		t.loadGraphicSlice9([FlxUIAssets.IMG_INVIS, FlxUIAssets.IMG_HILIGHT, FlxUIAssets.IMG_HILIGHT], Std.int(header.background.width),
 			Std.int(header.background.height), [[1, 1, 3, 3], [1, 1, 3, 3], [1, 1, 3, 3]], FlxUI9SliceSprite.TILE_NONE);
-		t.labelOffsets[FlxButton.PRESSED].y -= 1; // turn off the 1-pixel depress on click
+		t.labelOffsets[FlxButtonState.PRESSED].y -= 1; // turn off the 1-pixel depress on click
 
 		t.up_color = FlxColor.BLACK;
 		t.over_color = FlxColor.WHITE;
@@ -453,14 +450,14 @@ function getVirtualPad():FlxVirtualPad {
 					var g = swipe.startPosition.y - swipe.endPosition.y;
 					if (25 <= Math.sqrt(f * f + g * g))
 					{
-						if ((-45 <= swipe.startPosition.angleBetween(swipe.endPosition) && 45 >= swipe.startPosition.angleBetween(swipe.endPosition)) #if android || getVirtualPad().buttonCEDown_M.pressed #end || FlxG.mouse.wheel > 0 || FlxG.keys.justPressed.UP)
+						if ((-45 <= swipe.startPosition.degreesTo(swipe.endPosition) && 45 >= swipe.startPosition.degreesTo(swipe.endPosition)) #if android || getVirtualPad().buttonCEDown_M.pressed #end || FlxG.mouse.wheel > 0 || FlxG.keys.justPressed.UP)
 						{
 							// Go down
 							currentScroll++;
 							if(currentScroll >= list.length) currentScroll = list.length-1;
 							updateButtonPositions();
 						}
-						else if (-180 <= swipe.startPosition.angleBetween(swipe.endPosition) && -135 >= swipe.startPosition.angleBetween(swipe.endPosition) || (135 <= swipe.startPosition.angleBetween(swipe.endPosition) && 180 >= swipe.startPosition.angleBetween(swipe.endPosition)) #if android || getVirtualPad().buttonCEDown_M.pressed #end || FlxG.mouse.wheel < 0 || FlxG.keys.justPressed.DOWN)
+						else if (-180 <= swipe.startPosition.degreesTo(swipe.endPosition) && -135 >= swipe.startPosition.degreesTo(swipe.endPosition) || (135 <= swipe.startPosition.degreesTo(swipe.endPosition) && 180 >= swipe.startPosition.degreesTo(swipe.endPosition)) #if android || getVirtualPad().buttonCEDown_M.pressed #end || FlxG.mouse.wheel < 0 || FlxG.keys.justPressed.DOWN)
 						{
 							// Go up
 							--currentScroll;

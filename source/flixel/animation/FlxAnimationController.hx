@@ -4,11 +4,17 @@ import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.graphics.frames.FlxFrame;
 import flixel.util.FlxDestroyUtil.IFlxDestroyable;
+import flixel.util.FlxDestroyUtil;
+import flixel.util.FlxSignal.FlxTypedSignal;
 
 using StringTools;
 
 class FlxAnimationController implements IFlxDestroyable
 {
+	public var onFinish:FlxTypedSignal<Void->Void> = new FlxTypedSignal();
+	public var onFinishEnd:FlxTypedSignal<Void->Void> = new FlxTypedSignal();
+	public var onPlay:FlxTypedSignal<String->Bool->Bool->Int->Void> = new FlxTypedSignal();
+	public var onLoop:FlxTypedSignal<Void->Void> = new FlxTypedSignal();
 	/**
 	 * Property access for currently playing animation (warning: can be `null`).
 	 */
@@ -152,6 +158,10 @@ class FlxAnimationController implements IFlxDestroyable
 	public function destroy():Void
 	{
 		destroyAnimations();
+		FlxDestroyUtil.destroy(onFinish);
+		FlxDestroyUtil.destroy(onFinishEnd);
+		FlxDestroyUtil.destroy(onPlay);
+		FlxDestroyUtil.destroy(onLoop);
 		_animations = null;
 		callback = null;
 		_sprite = null;
@@ -673,7 +683,7 @@ class FlxAnimationController implements IFlxDestroyable
 		frameIndex = FlxG.random.int(0, numFrames - 1);
 	}
 
-	inline function fireCallback():Void
+	public inline function fireCallback():Void
 	{
 		if (callback != null)
 		{
@@ -681,6 +691,20 @@ class FlxAnimationController implements IFlxDestroyable
 			var number:Int = (_curAnim != null) ? (_curAnim.curFrame) : frameIndex;
 			callback(name, number, frameIndex);
 		}
+	}
+
+	public function fireLoopCallback(?name:String):Void
+	{
+		onLoop.dispatch();
+	}
+
+	@:deprecated('playCallback is deprecated, use onPlay.add') // 5.9.0, idk actually -ralty cne
+	public var playCallback:(name:String, forced:Bool, reversed:Bool, frame:Int) -> Void;
+
+	@:allow(flixel.animation)
+	function firePlayCallback(name:String, forced:Bool, reversed:Bool, frame:Int):Void
+	{
+		onPlay.dispatch(name, forced, reversed, frame);
 	}
 
 	@:allow(flixel.animation)

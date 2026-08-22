@@ -4,20 +4,22 @@
       "name": "lime",
       "type": "git",
       "dir": null,
-      "ref": "develop",
-      "url": "https://github.com/beihu235/lime"
+      "ref": "main",
+      "url": "https://github.com/NovaFlare-Engine-haxelib/lime-8.3.0"
     },
     {
       "name": "openfl",
-      "type": "haxelib",
-      "version": "9.3.3"
+      "type": "git",
+      "dir": null,
+      "ref": "main",
+      "url": "https://github.com/NovaFlare-Engine-haxelib/openfl-9.5.0"
     },
     {
       "name": "flixel",
       "type": "git",
       "dir": null,
-      "ref": "dev",
-      "url": "https://github.com/beihu235/flixel"
+      "ref": "main",
+      "url": "https://github.com/NovaFlare-Engine-haxelib/flixel-5.9.0"
     },
     {
       "name": "flixel-addons",
@@ -40,15 +42,15 @@
       "name": "hxcpp",
       "type": "git",
       "dir": null,
-      "ref": "master",
-      "url": "https://github.com/beihu235/hxcpp"
+      "ref": "main",
+      "url": "https://github.com/NovaFlare-Engine-haxelib/hxcpp-4.3.2-new.git"
     },
     {
       "name": "hxvlc",
       "type": "git",
       "dir": null,
       "ref": "main",
-      "url": "https://github.com/beihu235/hxvlc-1.8.1"
+      "url": "https://github.com/NovaFlare-Engine-haxelib/hxvlc-2.2.4.git"
     },
     {
       "name": "SScript",
@@ -82,7 +84,7 @@
       "type": "git",
       "dir": null,
       "ref": "main",
-      "url": "https://github.com/MaoPou/linc_luajit-rewriten.git"
+      "url": "https://github.com/NovaFlare-Engine-haxelib/linc_luajit"
     },
     {
       "name": "flxanimate",
@@ -96,7 +98,7 @@
       "type": "git",
       "dir": null,
       "ref": "main",
-      "url": "https://github.com/MaysLastPlay77/extension-androidtools.git"
+      "url": "https://github.com/NovaFlare-Engine-haxelib/extension-androidtools"
     },
     {
       "name": "funkin.vis",

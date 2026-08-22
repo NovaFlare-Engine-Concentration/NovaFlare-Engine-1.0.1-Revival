@@ -332,7 +332,7 @@ class FlxInputText extends FlxText
 	
 	function mouseOverlapping()
 	{
-		var mousePoint = FlxG.mouse.getScreenPosition(camera);
+		var mousePoint = FlxG.mouse.getViewPosition(camera);
 		var objPoint = this.getScreenPosition(null, camera);
 		if(mousePoint.x >= objPoint.x && mousePoint.y >= objPoint.y &&
 			mousePoint.x < objPoint.x + this.width && mousePoint.y < objPoint.y + this.height)
@@ -752,8 +752,9 @@ class FlxInputText extends FlxText
 			// Generate the properly sized caret and also draw a border that matches that of the textfield (if a border style is set)
 			// borderQuality can be safely ignored since the caret is always a rectangle
 
+			final caretHeight = Std.int(size + 2);
 			var cw:Int = caretWidth; // Basic size of the caret
-			var ch:Int = Std.int(size + 2);
+			var ch:Int = caretHeight;
 
 			// Make sure alpha channels are correctly set
 			var borderC:Int = (0xff000000 | (borderColor & 0x00ffffff));
@@ -770,24 +771,39 @@ class FlxInputText extends FlxText
 
 				case SHADOW:
 					// Shadow offset to the lower-right
-					cw += Std.int(borderSize);
-					ch += Std.int(borderSize); // expand canvas on one side for shadow
+					final absSize = Math.abs(borderSize);
+					cw += Std.int(absSize);
+					ch += Std.int(absSize); // expand canvas on one side for shadow
 					caret.makeGraphic(cw, ch, FlxColor.TRANSPARENT, false, caretKey); // start with transparent canvas
-					var r:Rectangle = new Rectangle(borderSize, borderSize, caretWidth, Std.int(size + 2));
+					final r:Rectangle = new Rectangle(absSize, absSize, caretWidth, caretHeight);
 					caret.pixels.fillRect(r, borderC); // draw shadow
 					r.x = r.y = 0;
 					caret.pixels.fillRect(r, caretC); // draw caret
 					caret.offset.x = caret.offset.y = 0;
-
+				#if (flixel > version("5.8.0"))
+				case SHADOW_XY(shadowX, shadowY):
+					// Shadow offset to the lower-right
+					cw += Std.int(Math.abs(shadowX));
+					ch += Std.int(Math.abs(shadowY)); // expand canvas on one side for shadow
+					caret.makeGraphic(cw, ch, FlxColor.TRANSPARENT, false, caretKey); // start with transparent canvas
+					final r:Rectangle = new Rectangle(Math.max(0, shadowX), Math.max(0, shadowY), caretWidth, caretHeight);
+					caret.pixels.fillRect(r, borderC); // draw shadow
+					r.x -= shadowX;
+					r.y -= shadowY;
+					caret.pixels.fillRect(r, caretC); // draw caret
+					caret.offset.x = shadowX < 0 ? -shadowX : 0;
+					caret.offset.y = shadowY < 0 ? -shadowY : 0;
+				#end
 				case OUTLINE_FAST, OUTLINE:
 					// Border all around it
-					cw += Std.int(borderSize * 2);
-					ch += Std.int(borderSize * 2); // expand canvas on both sides
+					final absSize = Math.abs(borderSize);
+					cw += Std.int(absSize * 2);
+					ch += Std.int(absSize * 2); // expand canvas on both sides
 					caret.makeGraphic(cw, ch, borderC, false, caretKey); // start with borderColor canvas
-					var r = new Rectangle(borderSize, borderSize, caretWidth, Std.int(size + 2));
+					final r = new Rectangle(absSize, absSize, caretWidth, caretHeight);
 					caret.pixels.fillRect(r, caretC); // draw caret
 					// we need to offset caret's drawing position since the caret is now larger than normal
-					caret.offset.x = caret.offset.y = borderSize;
+					caret.offset.x = caret.offset.y = absSize;
 			}
 			// Update width/height so caret's dimensions match its pixels
 			caret.width = cw;

@@ -1,30 +1,330 @@
 name: MobileBuild
-
 on:
-  # Triggers the workflow on push or pull request events but only for the master branch
+  workflow_call:
+    inputs:
+      dependencies_to_update:
+        description: '输入 "all" 更新所有haxelib, 或指定库名 (e.g. "lime,openfl")不输入即不给haxelib做任何更新'
+        required: false
+        type: string
+        default: ''
+      
   push:
     branches: [ main ]
+    paths-ignore:
+      - 'docs/'
+      - 'example_mods/'
+      - 'README.md'
   pull_request:
     branches: [ main ]
-
-  # Allows you to run this workflow manually from the Actions tab
+    
   workflow_dispatch:
+    inputs:
+      dependencies_to_update:
+        description: '输入 "all" 更新所有haxelib, 也可以输入单个或多个haxelib单独更新他们(e.g. "lime openfl flixel"),不输入即不给haxelib做任何更新'
+        required: false
+        default: ''
+        
+jobs: 
+  Android:
+    runs-on: macos-14
+    environment: ${{ github.repository == 'NovaFlare-Engine-Concentration/FNF-NovaFlare-Engine' && github.event_name != 'pull_request_target' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'private-build' || 'public-build' }}
+    concurrency:
+      group: ${{ github.workflow }}-Android-${{ github.ref }}
 
-jobs:
-  Build:
-    name: ${{ matrix.name }}
-    strategy:
-      matrix:
-        include:
-          - name: Android
-            os: macos-14
-            buildArgs: "android -ONLY_ARMV8 -release"
-            artifactName: androidBuild
-            artifactPath: "export/release/android/bin/app/build/outputs/apk/release/*.apk"
-    uses: ./.github/workflows/build.yml
-    with:
-        name: ${{ matrix.name }}
-        os: ${{ matrix.os }}
-        buildArgs: ${{ matrix.buildArgs }}
-        artifactName: ${{ matrix.artifactName }}
-        artifactPath: ${{ matrix.artifactPath }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@main
+        
+      - name: Setup Android NDK
+        uses: nttld/setup-ndk@main
+        id: setup-ndk
+        with:
+          ndk-version: r28c
+
+      - name: Setup Java JDK
+        uses: actions/setup-java@main
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Haxe
+        uses: krdlab/setup-haxe@master
+        with:
+          haxe-version: 4.3.7
+
+      - name: Restore private GameAnalytics
+        if: github.repository == 'NovaFlare-Engine-Concentration/FNF-NovaFlare-Engine' && github.event_name != 'pull_request_target' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        shell: pwsh
+        env:
+          NOVA_GA_IMPL_B64: ${{ secrets.NOVA_GA_IMPL_B64 }}
+          NOVA_GA_TYPES_B64: ${{ secrets.NOVA_GA_TYPES_B64 }}
+          NOVA_GA_CONFIG_B64: ${{ secrets.NOVA_GA_CONFIG_B64 }}
+        run: ./tools/restore-private-gameanalytics.ps1 -Required
+              
+      - name: Determine Android cache strategy
+        id: android_cache
+        run: |
+          if [[ "${{ inputs.dependencies_to_update }}" == "all" ]] || \
+             [[ "${{ inputs.dependencies_to_update }}" == "android" ]]; then
+            echo "跳过缓存：需要更新所有或Android依赖"
+            echo "skip_cache=true" >> $GITHUB_OUTPUT
+            echo "update_libs=true" >> $GITHUB_OUTPUT
+          elif [[ -n "${{ inputs.dependencies_to_update }}" && "${{ inputs.dependencies_to_update }}" != "ios" ]]; then
+            echo "使用缓存：仅更新指定依赖"
+            echo "skip_cache=false" >> $GITHUB_OUTPUT
+            echo "update_libs=true" >> $GITHUB_OUTPUT
+            echo "libs_to_update=${{ inputs.dependencies_to_update }}" >> $GITHUB_OUTPUT
+          else
+            echo "使用缓存：无需更新依赖"
+            echo "skip_cache=false" >> $GITHUB_OUTPUT
+            echo "update_libs=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Restore Android cache
+        if: steps.android_cache.outputs.skip_cache == 'false'
+        uses: actions/cache/restore@v4
+        with:
+          key: cache-build-Android
+          restore-keys: |
+            cache-build-Android
+          path: |
+            .haxelib/
+            export/legacy-gc/android/
+            ~/.gradle
+            
+      - name: Install Android Libraries
+        run: |
+          haxelib setup ~/haxelib
+          haxelib --global install hmm --quiet
+          haxelib --global run hmm install
+          # A cached haxelib git checkout can drift to the upstream default
+          # branch even when hmm.json pins a commit. Restore every immutable
+          # dependency plus NovaFlare's compatibility fork before compilation.
+          for library in polymod thx.core thx.semver FlxPartialSound; do
+            haxelib --global run hmm reinstall --force "$library"
+          done
+          
+          if [ "${{ steps.android_cache.outputs.update_libs }}" == "true" ]; then
+            if [ "${{ steps.android_cache.outputs.skip_cache }}" == "true" ]; then
+              echo "强制重新安装所有Android依赖..."
+            elif [ -n "${{ steps.android_cache.outputs.libs_to_update }}" ]; then
+              echo "更新指定Android依赖: ${{ steps.android_cache.outputs.libs_to_update }}"
+              haxelib --global install hmm
+              haxelib --global run hmm reinstall --force $(echo "${{ steps.android_cache.outputs.libs_to_update }}")
+            fi
+          else
+            echo "使用缓存，无需安装依赖"
+          fi
+
+      - name: Configure Android
+        run: |
+          haxelib run lime config ANDROID_SDK $ANDROID_HOME
+          haxelib run lime config ANDROID_NDK_ROOT $ANDROID_NDK_HOME
+          haxelib run lime config JAVA_HOME $JAVA_HOME
+          haxelib run lime config ANDROID_SETUP true
+            
+      - name: Extract current version
+        id: get_version
+        run: |
+          CURRENT_VERSION=$(sed -n 's/.*build-number="\([^"]*\)".*/\1/p' Project.xml)
+          echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Compile Android
+        run: |
+          COMMIT_SHA=$(git rev-parse --short HEAD)
+          CURRENT_VERSION="${{ steps.get_version.outputs.current_version }}"
+    
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            NEW_VERSION="${CURRENT_VERSION/-dev/-$COMMIT_SHA}"
+            haxelib run lime build android -Dlegacy_gc_compare -Dcommit_sha=$COMMIT_SHA -Dbuild_number=$NEW_VERSION
+          else
+            haxelib run lime build android -Dlegacy_gc_compare -Dcommit_sha=$COMMIT_SHA -Dbuild_number=$CURRENT_VERSION
+          fi
+
+      - name: Create Android zip package
+        run: |
+          cd export/legacy-gc/android/bin/app/build/outputs/apk/release/
+          zip -r android.zip *.apk
+
+      - name: Create Haxelib zip package
+        run: |
+          zip -r /Users/runner/haxelib.zip .haxelib/
+
+      - name: Upload Android Artifact
+        uses: actions/upload-artifact@main
+        with:
+          name: androidBuild
+          path: export/legacy-gc/android/bin/app/build/outputs/apk/release/android.zip
+          if-no-files-found: error
+
+      - name: Upload Haxelib Artifact
+        uses: actions/upload-artifact@main
+        with:
+          name: Haxelib
+          path: /Users/runner/haxelib.zip
+          if-no-files-found: error
+
+      - name: Clear old Android cache
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const caches = await github.rest.actions.getActionsCacheList({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            })
+            for (const cache of caches.data.actions_caches) {
+              if (cache.key == "cache-build-Android") {
+                console.log('Clearing ' + cache.key + '...')
+                await github.rest.actions.deleteActionsCacheById({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  cache_id: cache.id,
+                })
+                console.log("Cache cleared.")
+              }
+            }
+          
+      - name: Save Android cache
+        uses: actions/cache/save@v4
+        with:
+          key: cache-build-Android
+          path: |
+            .haxelib/
+            export/legacy-gc/android/
+            ~/.gradle
+          
+  iOS:
+    runs-on: macos-15
+    environment: ${{ github.repository == 'NovaFlare-Engine-Concentration/FNF-NovaFlare-Engine' && github.event_name != 'pull_request_target' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'private-build' || 'public-build' }}
+    concurrency:
+      group: ${{ github.workflow }}-iOS-${{ github.ref }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@main
+        
+      - name: Select Xcode 16.4
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '16.4'
+  
+      - name: Setup Haxe
+        uses: krdlab/setup-haxe@master
+        with:
+          haxe-version: 4.3.7
+
+      - name: Restore private GameAnalytics
+        if: github.repository == 'NovaFlare-Engine-Concentration/FNF-NovaFlare-Engine' && github.event_name != 'pull_request_target' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        shell: pwsh
+        env:
+          NOVA_GA_IMPL_B64: ${{ secrets.NOVA_GA_IMPL_B64 }}
+          NOVA_GA_TYPES_B64: ${{ secrets.NOVA_GA_TYPES_B64 }}
+          NOVA_GA_CONFIG_B64: ${{ secrets.NOVA_GA_CONFIG_B64 }}
+        run: ./tools/restore-private-gameanalytics.ps1 -Required
+   
+      - name: Determine iOS cache strategy
+        id: ios_cache
+        run: |
+          if [[ "${{ inputs.dependencies_to_update }}" == "all" ]] || \
+             [[ "${{ inputs.dependencies_to_update }}" == "ios" ]]; then
+            echo "跳过缓存：需要更新所有或iOS依赖"
+            echo "skip_cache=true" >> $GITHUB_OUTPUT
+            echo "update_libs=true" >> $GITHUB_OUTPUT
+          elif [[ -n "${{ inputs.dependencies_to_update }}" && "${{ inputs.dependencies_to_update }}" != "android" ]]; then
+            echo "使用缓存：仅更新指定依赖"
+            echo "skip_cache=false" >> $GITHUB_OUTPUT
+            echo "update_libs=true" >> $GITHUB_OUTPUT
+            echo "libs_to_update=${{ inputs.dependencies_to_update }}" >> $GITHUB_OUTPUT
+          else
+            echo "使用缓存：无需更新依赖"
+            echo "skip_cache=false" >> $GITHUB_OUTPUT
+            echo "update_libs=false" >> $GITHUB_OUTPUT
+          fi
+                
+      - name: Restore iOS cache
+        if: steps.ios_cache.outputs.skip_cache == 'false'
+        uses: actions/cache/restore@v4
+        with:
+          enableCrossOsArchive: true
+          key: cache-build-iOS
+          restore-keys: |
+            cache-build-iOS
+          path: |
+            .haxelib/
+            export/legacy-gc/ios/
+          
+      - name: Install iOS Libraries
+        run: |
+          haxelib setup ~/haxelib
+          haxelib --global install hmm --quiet
+          haxelib --global run hmm install
+          # Restore pinned commits after haxelib has touched cached git clones.
+          for library in polymod thx.core thx.semver FlxPartialSound; do
+            haxelib --global run hmm reinstall --force "$library"
+          done
+          
+          if [ "${{ steps.ios_cache.outputs.update_libs }}" == "true" ]; then
+            if [ "${{ steps.ios_cache.outputs.skip_cache }}" == "true" ]; then
+              echo "强制重新安装所有iOS依赖..."
+            elif [ -n "${{ steps.ios_cache.outputs.libs_to_update }}" ]; then
+              echo "更新指定iOS依赖: ${{ steps.ios_cache.outputs.libs_to_update }}"
+              haxelib --global install hmm
+              haxelib --global run hmm reinstall --force $(echo "${{ steps.ios_cache.outputs.libs_to_update }}")
+            fi
+          else
+            echo "使用缓存，无需安装依赖"
+          fi
+
+          echo "lime revision: $(git -C .haxelib/lime/git rev-parse HEAD)"
+          echo "openfl revision: $(git -C .haxelib/openfl/git rev-parse HEAD)"
+
+      - name: Compile iOS
+        run: haxelib run lime build ios -arm64 -nosign -Dlegacy_gc_compare -Dcommit_sha=$(git rev-parse --short HEAD)
+        
+      - name: Make IPA And iOS Zip
+        run: |
+          cd export/legacy-gc/ios/build/Release-iphoneos
+          rm -rf Payload
+          mkdir Payload
+          mv *.app Payload
+          zip -r NovaFlareEngine.ipa Payload
+
+      - name: Create iOS zip package
+        run: |
+          cd export/legacy-gc/ios/build/Release-iphoneos/
+          zip -r ios.zip *.ipa
+
+      - name: Upload iOS Artifact
+        uses: actions/upload-artifact@main
+        with:
+          name: iOSBuild
+          path: export/legacy-gc/ios/build/Release-iphoneos/ios.zip
+          if-no-files-found: error
+
+      - name: Clear old iOS cache
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const caches = await github.rest.actions.getActionsCacheList({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            })
+            for (const cache of caches.data.actions_caches) {
+              if (cache.key == "cache-build-iOS") {
+                console.log('Clearing ' + cache.key + '...')
+                await github.rest.actions.deleteActionsCacheById({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  cache_id: cache.id,
+                })
+                console.log("Cache cleared.")
+              }
+            }
+          
+      - name: Save iOS cache
+        uses: actions/cache/save@v4
+        with:
+          key: cache-build-iOS
+          path: |
+            .haxelib/
+            export/legacy-gc/ios/

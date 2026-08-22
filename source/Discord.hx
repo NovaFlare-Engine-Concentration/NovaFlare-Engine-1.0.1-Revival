@@ -1,7 +1,8 @@
 package;
 
-import Sys.sleep;
-import discord_rpc.DiscordRpc;
+import hxdiscord_rpc.Discord;
+import hxdiscord_rpc.Types;
+import sys.thread.Thread;
 
 #if LUA_ALLOWED
 import llua.Lua;
@@ -13,55 +14,73 @@ using StringTools;
 class DiscordClient
 {
 	public static var isInitialized:Bool = false;
+	
 	public function new()
 	{
 		trace("Discord Client starting...");
-		DiscordRpc.start({
-			clientID: "863222024192262205",
-			onReady: onReady,
-			onError: onError,
-			onDisconnected: onDisconnected
-		});
+		
+		final handlers:DiscordEventHandlers = new DiscordEventHandlers();
+		handlers.ready = cpp.Function.fromStaticFunction(onReady);
+		handlers.disconnected = cpp.Function.fromStaticFunction(onDisconnected);
+		handlers.errored = cpp.Function.fromStaticFunction(onError);
+		Discord.Initialize("863222024192262205", cpp.RawPointer.addressOf(handlers), false, null);
+		
 		trace("Discord Client started.");
 
 		while (true)
 		{
-			DiscordRpc.process();
-			sleep(2);
+			#if DISCORD_DISABLE_IO_THREAD
+			Discord.UpdateConnection();
+			#end
+			
+			Discord.RunCallbacks();
+			Sys.sleep(2);
 			//trace("Discord Client Update");
 		}
 
-		DiscordRpc.shutdown();
+		Discord.Shutdown();
 	}
 	
 	public static function shutdown()
 	{
-		DiscordRpc.shutdown();
+		Discord.Shutdown();
 	}
 	
-	static function onReady()
+	static function onReady(request:cpp.RawConstPointer<DiscordUser>):Void
 	{
-		DiscordRpc.presence({
-			details: "In the Menus",
-			state: null,
-			largeImageKey: 'icon',
-			largeImageText: "Psych Engine"
-		});
+		final username:String = request[0].username;
+		final globalName:String = request[0].username;
+		final discriminator:Int = Std.parseInt(request[0].discriminator);
+
+		if (discriminator != 0)
+			trace('Discord: Connected to user ${username}#${discriminator} ($globalName)');
+		else
+			trace('Discord: Connected to user @${username} ($globalName)');
+
+		final discordPresence:DiscordRichPresence = new DiscordRichPresence();
+		discordPresence.state = null;
+		discordPresence.details = "In the Menus";
+		discordPresence.largeImageKey = "icon";
+		discordPresence.largeImageText = "Psych Engine";
+		discordPresence.startTimestamp = 0;
+		discordPresence.endTimestamp = 0;
+
+		Discord.UpdatePresence(cpp.RawConstPointer.addressOf(discordPresence));
 	}
 
-	static function onError(_code:Int, _message:String)
+	static function onError(errorCode:Int, message:cpp.ConstCharStar):Void
 	{
-		trace('Error! $_code : $_message');
+		trace('Discord: Error ($errorCode:$message)');
 	}
 
-	static function onDisconnected(_code:Int, _message:String)
+	static function onDisconnected(errorCode:Int, message:cpp.ConstCharStar):Void
 	{
-		trace('Disconnected! $_code : $_message');
+		trace('Discord: Disconnected ($errorCode:$message)');
 	}
 
 	public static function initialize()
 	{
-		var DiscordDaemon = sys.thread.Thread.create(() ->
+		var DiscordDaemon = Thread.create(() ->
 		{
 			new DiscordClient();
 		});
@@ -78,16 +97,16 @@ class DiscordClient
 			endTimestamp = startTimestamp + endTimestamp;
 		}
 
-		DiscordRpc.presence({
-			details: details,
-			state: state,
-			largeImageKey: 'icon',
-			largeImageText: "Engine Version: " + MainMenuState.psychEngineVersion,
-			smallImageKey : smallImageKey,
-			// Obtained times are in milliseconds so they are divided so Discord can use it
-			startTimestamp : Std.int(startTimestamp / 1000),
-            endTimestamp : Std.int(endTimestamp / 1000)
-		});
+		final discordPresence:DiscordRichPresence = new DiscordRichPresence();
+		discordPresence.state = state;
+		discordPresence.details = details;
+		discordPresence.largeImageKey = "icon";
+		discordPresence.largeImageText = "Engine Version: " + MainMenuState.psychEngineVersion;
+		discordPresence.smallImageKey = smallImageKey;
+		discordPresence.startTimestamp = Std.int(startTimestamp / 1000);
+		discordPresence.endTimestamp = Std.int(endTimestamp / 1000);
+
+		Discord.UpdatePresence(cpp.RawConstPointer.addressOf(discordPresence));
 
 		//trace('Discord RPC Updated. Arguments: $details, $state, $smallImageKey, $hasStartTimestamp, $endTimestamp');
 	}

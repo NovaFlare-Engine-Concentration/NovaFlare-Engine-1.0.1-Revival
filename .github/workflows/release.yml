@@ -1,0 +1,175 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_input:
+        description: '输入格式为"版本名 版本号"，例如：1.2.0-Dev 2.7'
+        required: true
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  update-versions:
+    runs-on: ubuntu-latest
+    outputs:
+      version_name: ${{ steps.parse-version.outputs.version_name }}
+      version_number: ${{ steps.parse-version.outputs.version_number }}
+      version_number_int_with_timestamp: ${{ steps.parse-version.outputs.version_number_int_with_timestamp }}
+      commit_sha: ${{ steps.parse-version.outputs.commit_sha }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Parse version input
+        id: parse-version
+        run: |
+          input="${{ github.event.inputs.version_input }}"
+          version_name=$(echo "$input" | awk '{print $1}')
+          version_number=$(echo "$input" | awk '{print $2}')
+          commit_sha=$(git rev-parse --short HEAD)
+          current_timestamp=$(date +%Y%m%d%H%M)
+          
+          version_number_int=$(echo "$version_number" | tr -d '.')
+          current_date=$(date +%y%m%d)
+          version_number_int_with_timestamp="${version_number_int}${current_date}"
+
+          echo "Parsed version name: $version_name"
+          echo "Parsed version number: $version_number"
+          echo "Version number without dots: $version_number_int"
+          echo "Version number with timestamp: $version_number_int_with_timestamp"
+          echo "Commit SHA: $commit_sha"
+          
+          echo "version_name=$version_name" >> $GITHUB_OUTPUT
+          echo "version_number=$version_number" >> $GITHUB_OUTPUT
+          echo "version_number_int_with_timestamp=$version_number_int_with_timestamp" >> $GITHUB_OUTPUT
+          echo "commit_sha=$commit_sha" >> $GITHUB_OUTPUT
+
+      - name: Update gitVersion.txt
+        run: |
+          echo "Updating gitVersion.txt..."
+          echo "${{ steps.parse-version.outputs.version_name }}" > gitVersion.txt
+          echo "${{ steps.parse-version.outputs.version_number }}" >> gitVersion.txt
+          echo "Updated gitVersion.txt content:"
+          cat gitVersion.txt
+
+      - name: Update Project.xml
+        run: |
+          echo "Updating Project.xml..."
+          sed -i "s/\(<app title=\"NovaFlare Engine\".* version=\"\)[^\"]*\(\"\)/\1${{ steps.parse-version.outputs.version_name }}\2/" Project.xml
+          if grep -q 'build-number="[0-9]*"' Project.xml; then
+            sed -i "s/\(<app title=\"NovaFlare Engine\".* build-number=\"\)[0-9]*\(\"\)/\1${{ steps.parse-version.outputs.version_number_int_with_timestamp }}\2/" Project.xml
+            echo "Updated existing build-number attribute with integer version and timestamp"
+          else
+            sed -i "s/\(<app title=\"NovaFlare Engine\".* version=\"[^\"]*\"\)/\1 build-number=\"${{ steps.parse-version.outputs.version_number_int_with_timestamp }}\"/" Project.xml
+            echo "Added build-number attribute with integer version and timestamp"
+          fi
+          echo "Updated Project.xml version and build-number attributes"
+
+      - name: Update MainMenuState.hx
+        run: |
+          echo "Updating MainMenuState.hx..."
+          sed -i "s/\(public static var novaFlareEngineVersion:String = '\)[^']*/\1${{ steps.parse-version.outputs.version_name }}/" source/states/mainMenuState/MainMenuState.hx
+          sed -i "s/\(public static var novaFlareEngineDataVersion:Float = \)[0-9.]*/\1${{ steps.parse-version.outputs.version_number }}/" source/states/mainMenuState/MainMenuState.hx
+          echo "Updated MainMenuState.hx version variables"
+
+      - name: Commit all changes
+        run: |
+          git config --local user.email "actions@github.com"
+          git config --local user.name "GitHub Actions"
+          git add gitVersion.txt Project.xml source/states/mainMenuState/MainMenuState.hx
+    
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore: Release version ${{ steps.parse-version.outputs.version_name }} ${{ steps.parse-version.outputs.version_number_int_with_timestamp }}"
+            git push
+          fi
+          
+  mobile-build:
+    name: "Mobile Build (macOS 14)"
+    needs: update-versions
+    uses: ./.github/workflows/MobileBuild.yml
+    with:
+      dependencies_to_update: 'all'
+    secrets: inherit
+
+  macos-build:
+    name: "macOS Build"
+    needs: mobile-build
+    uses: ./.github/workflows/MacBuild.yml
+    secrets: inherit
+
+  windows-build:
+    name: "Windows Build"
+    needs: update-versions
+    uses: ./.github/workflows/WindowsBuild.yml
+    secrets: inherit
+
+  linux-build:
+    name: "Linux Build"
+    needs: update-versions
+    uses: ./.github/workflows/LinuxBuild.yml
+    secrets: inherit
+
+  releaser:
+    name: "Create Release"
+    needs: [update-versions, mobile-build, macos-build, windows-build, linux-build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download Android Build
+        uses: actions/download-artifact@v4
+        with:
+          name: androidBuild
+          path: artifacts/
+
+      - name: Download iOS Build
+        uses: actions/download-artifact@v4
+        with:
+          name: iOSBuild
+          path: artifacts/
+
+      - name: Download macOS14 Build
+        uses: actions/download-artifact@v4
+        with:
+          name: macOSBuild-14
+          path: artifacts/
+
+      - name: Download macOS15 Build
+        uses: actions/download-artifact@v4
+        with:
+          name: macOSBuild-15
+          path: artifacts/
+
+      - name: Download Windows Build
+        uses: actions/download-artifact@v4
+        with:
+          name: windowsBuild
+          path: artifacts/
+
+      - name: Download Linux Build
+        uses: actions/download-artifact@v4
+        with:
+          name: LinuxBuild
+          path: artifacts/
+
+      - name: List downloaded artifacts
+        run: |
+          find artifacts/ -type f -name "*" | sort
+          echo "Total files found:"
+          find artifacts/ -type f -name "*" | wc -l
+
+      - name: Publish The Release
+        uses: softprops/action-gh-release@v3
+        with:
+          token: "${{ secrets.GITHUB_TOKEN }}"
+          prerelease: false
+          tag_name: "V${{ needs.update-versions.outputs.version_name }}"
+          name: "V${{ needs.update-versions.outputs.version_name }}"
+          files: |
+            artifacts/*.zip
+          allowUpdates: true

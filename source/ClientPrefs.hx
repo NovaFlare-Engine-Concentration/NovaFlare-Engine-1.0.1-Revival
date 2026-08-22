@@ -18,6 +18,9 @@ class ClientPrefs {
 	//public static var optimize:Bool = true;
 	public static var shaders:Bool = true;
 	public static var framerate:Int = 60;
+	public static var drawFramerate:Int = 120;
+	public static var lockRender:Bool = false;
+	public static var renderThread:Bool = true;
 	
 	public static var cursing:Bool = true;
 	public static var violence:Bool = true;
@@ -25,7 +28,7 @@ class ClientPrefs {
 	public static var hideHud:Bool = false;
 	public static var noteOffset:Int = 0;
 	public static var arrowHSV:Array<Array<Int>> = [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]];
-	public static var vibration:Bool = false;
+	//public static var vibration:Bool = false;
 	public static var ghostTapping:Bool = true;
 	public static var timeBarType:String = 'Time Left';
 	public static var scoreZoom:Bool = true;
@@ -136,6 +139,9 @@ class ClientPrefs {
 		//FlxG.save.data.optimize = optimize;
 		FlxG.save.data.shaders = shaders;
 		FlxG.save.data.framerate = framerate;
+		FlxG.save.data.drawFramerate = drawFramerate;
+		FlxG.save.data.lockRender = lockRender;
+		FlxG.save.data.renderThread = renderThread;
 		FlxG.save.data.rainbowFPS = rainbowFPS;
 		FlxG.save.data.gradientTimeBar = gradientTimeBar;
 		//FlxG.save.data.cursing = cursing;
@@ -144,7 +150,7 @@ class ClientPrefs {
 		FlxG.save.data.noteOffset = noteOffset;
 		FlxG.save.data.hideHud = hideHud;
 		FlxG.save.data.arrowHSV = arrowHSV;
-		FlxG.save.data.vibration = vibration;
+		//FlxG.save.data.vibration = vibration;
 		FlxG.save.data.ghostTapping = ghostTapping;
 		FlxG.save.data.timeBarType = timeBarType;
 		FlxG.save.data.scoreZoom = scoreZoom;
@@ -238,6 +244,16 @@ class ClientPrefs {
 				FlxG.updateFramerate = framerate;
 			}
 		}
+
+		if (FlxG.save.data.drawFramerate != null) {
+			drawFramerate = FlxG.save.data.drawFramerate;
+		}
+		if (FlxG.save.data.lockRender != null) {
+			lockRender = FlxG.save.data.lockRender;
+		}
+		if (FlxG.save.data.renderThread != null) {
+			renderThread = FlxG.save.data.renderThread;
+		}
 		
 		/*if(FlxG.save.data.cursing != null) {
 			cursing = FlxG.save.data.cursing;
@@ -257,9 +273,9 @@ class ClientPrefs {
 		if(FlxG.save.data.arrowHSV != null) {
 			arrowHSV = FlxG.save.data.arrowHSV;
 		}
-		if(FlxG.save.data.vibration != null) {
+		/*if(FlxG.save.data.vibration != null) {
 			vibration = FlxG.save.data.vibration;
-		}
+		}*/
 		if(FlxG.save.data.ghostTapping != null) {
 			ghostTapping = FlxG.save.data.ghostTapping;
 		}
@@ -365,6 +381,14 @@ class ClientPrefs {
 		*/
 		
 		// new extend
+
+		FlxG.updateFramerate = framerate;
+		FlxG.drawFramerate = drawFramerate;
+		FlxG.stage.application.window.lockRender = lockRender;
+
+		#if sys
+		lime.graphics.opengl.GL.setMultiThreaded(renderThread);
+		#end
 		
 		// flixel automatically saves your volume!
 		if(FlxG.save.data.volume != null)

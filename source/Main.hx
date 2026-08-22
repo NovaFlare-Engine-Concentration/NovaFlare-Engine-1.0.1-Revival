@@ -35,9 +35,9 @@ class Main extends Sprite
 		height: 720, // WINDOW height
 		initialState: TitleState, // initial game state
 		zoom: -1.0, // game state bounds
-		framerate: 60, // default framerate
+		framerate: 120, // default framerate
 		skipSplash: true, // if the default flixel splash screen should be skipped
-		startFullscreen: true // if the game should start at fullscreen mode
+		startFullscreen: false // if the game should start at fullscreen mode
 	};
 
 	public static var fpsVar:FPS;
@@ -53,7 +53,7 @@ class Main extends Sprite
 	{
 		super();
 
-    SUtil.gameCrashCheck();
+    	SUtil.gameCrashCheck();
 		if (stage != null)
 		{
 			init();
@@ -87,11 +87,29 @@ class Main extends Sprite
 			game.width = Math.ceil(stageWidth / game.zoom);
 			game.height = Math.ceil(stageHeight / game.zoom);
 		}
-	
-			SUtil.doTheCheck();
-	
+
+		SUtil.doTheCheck();
+		
 		ClientPrefs.loadDefaultKeys();
-		addChild(new FlxGame(game.width, game.height, game.initialState, #if (flixel < "5.0.0") game.zoom, #end game.framerate, game.framerate, game.skipSplash, game.startFullscreen));
+		
+		var flxGame:FlxGame = new FlxGame(
+			#if (openfl >= "9.2.0") 
+			1280, 720 
+			#else 
+			game.width, game.height 
+			#end, 
+			game.initialState, 
+			#if (flixel < "5.0.0") game.zoom, #end 
+			game.framerate, game.framerate, game.skipSplash, game.startFullscreen
+		);
+		addChild(flxGame);
+
+		FlxG.fixedTimestep = false;
+		FlxG.game.focusLostFramerate = 60;
+		@:privateAccess {
+			if (FlxG.game.stage != null && FlxG.game.stage.window != null)
+				FlxG.game.stage.window.frameRate = FlxG.updateFramerate;
+		}
 
 		fpsVar = new FPS(10, 3, 0xFFFFFF);
 		addChild(fpsVar);
@@ -100,10 +118,9 @@ class Main extends Sprite
 		if(fpsVar != null) {
 			fpsVar.visible = ClientPrefs.showFPS;
 		}
-        
-        FlxG.autoPause = false;
-		#if html5
 		
+		FlxG.autoPause = false;
+		#if html5
 		FlxG.mouse.visible = false;
 		#end
 		

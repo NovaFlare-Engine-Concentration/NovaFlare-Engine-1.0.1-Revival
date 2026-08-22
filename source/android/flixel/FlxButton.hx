@@ -1,8 +1,6 @@
 package android.flixel;
 
-import flixel.FlxCamera;
-import flixel.FlxG;
-import flixel.FlxSprite;
+import flixel.graphics.frames.FlxFramesCollection;
 import flixel.graphics.atlas.FlxAtlas;
 import flixel.graphics.atlas.FlxNode;
 import flixel.graphics.frames.FlxTileFrames;
@@ -10,8 +8,13 @@ import flixel.input.FlxInput;
 import flixel.input.FlxPointer;
 import flixel.input.IFlxInput;
 import flixel.input.touch.FlxTouch;
-import flixel.math.FlxPoint;
+import flixel.util.FlxDestroyUtil.IFlxDestroyable;
+import flixel.input.keyboard.FlxKey;
 import flixel.sound.FlxSound;
+import flixel.FlxSprite;
+import flixel.FlxCamera;
+import flixel.FlxG;
+import flixel.math.FlxPoint;
 import flixel.text.FlxText;
 import flixel.util.FlxDestroyUtil;
 
@@ -41,15 +44,31 @@ class FlxButton extends FlxTypedButton<FlxText>
 	public var text(get, set):String;
 
 	/**
+		A simple tag that returns the button's graphic name in upper case.
+	**/
+	public var tag:String;
+
+	/**
+		A Small invisible bounds used for colision
+	**/
+	public var bounds:FlxSprite = new FlxSprite();
+
+	/**
+	 * The color of the button when it is not pressed.
+	 */
+	public var saveColor:Int = 0xFFFFFF;
+
+	/**
 	 * Creates a new `FlxButton` object with a gray background
 	 * and a callback function on the UI thread.
 	 *
 	 * @param   X         The x position of the button.
 	 * @param   Y         The y position of the button.
+	 * @param   IDs        The button's IDs(used for input handling so be careful).
 	 * @param   Text      The text that you want to appear on the button.
 	 * @param   OnClick   The function to call whenever the button is clicked.
 	 */
-	public function new(X:Float = 0, Y:Float = 0, ?Text:String, ?OnClick:Void->Void)
+	public function new(X:Float = 0, Y:Float = 0, ?IDs:Array<FlxKey> = null, ?Text:String, ?OnClick:Void->Void):Void
 	{
 		super(X, Y, OnClick);
 
@@ -57,6 +76,7 @@ class FlxButton extends FlxTypedButton<FlxText>
 			point.set(point.x - 1, point.y + 3);
 
 		initLabel(Text);
+		this.IDs = IDs == null ? [] : IDs;
 	}
 
 	/**
@@ -77,9 +97,30 @@ class FlxButton extends FlxTypedButton<FlxText>
 	{
 		if (Text != null)
 		{
-			label = new FlxText(x + labelOffsets[NORMAL].x, y + labelOffsets[NORMAL].y, 80, Text);
-			label.setFormat(null, 8, 0x333333, 'center');
-			label.alpha = labelAlphas[status];
+			label = new FlxText(x, y, 80, Text);
+			label.antialiasing = true;
+			label.setFormat(Paths.font('vcr.ttf'), Std.int(8), 0xFFFFFF, CENTER, FlxTextBorderStyle.OUTLINE, 0x00FFFFFF);
+			label.borderStyle = NONE;
+			label.alpha = 1;
+			label.drawFrame(true);
+		}
+	}
+
+	/**
+	 * Updates the size of the text field to match the button.
+	 */
+	override public function updateLabelSize(owidth:Int, oheight:Int):Void
+	{
+		saveWidth = owidth;
+		saveHeight = oheight;
+
+		if (label != null)
+		{
+			label.setFormat(Paths.font('vcr.ttf'), Std.int(owidth / 4), 0xFFFFFF, CENTER, FlxTextBorderStyle.OUTLINE, 0x00FFFFFF);
+			label.borderStyle = NONE;
+			label.fieldWidth = owidth;
+			label.x += owidth / 2 - label.fieldWidth / 2;
+			label.y += oheight / 2 - label.height / 2;
 			label.drawFrame(true);
 		}
 	}
@@ -97,6 +138,16 @@ class FlxButton extends FlxTypedButton<FlxText>
 			label.text = Text;
 		return Text;
 	}
+
+	public inline function centerInBounds()
+	{
+		setPosition(bounds.x + ((bounds.width - frameWidth) / 2), bounds.y + ((bounds.height - frameHeight) / 2));
+	}
+
+	public inline function centerBounds()
+	{
+		bounds.setPosition(x + ((frameWidth - bounds.width) / 2), y + ((frameHeight - bounds.height) / 2));
+	}
 }
 
 /**
@@ -111,6 +162,11 @@ class FlxTypedButton<T:FlxSprite> extends FlxSprite implements IFlxInput
 	 * The label that appears on the button. Can be any `FlxSprite`.
 	 */
 	public var label(default, set):T;
+
+	/**
+		The `FlxKey` that are assigned to this button.
+	**/
+	public var IDs:Array<FlxKey> = [];
 
 	/**
 	 * What offsets the `label` should have for each status.
@@ -136,11 +192,20 @@ class FlxTypedButton<T:FlxSprite> extends FlxSprite implements IFlxInput
 	public var allowSwiping:Bool = true;
 
 	/**
+	 * Whether the button can use multiple fingers on it.
+	 */
+	public var multiTouch:Bool = false;
+
+	/**
 	 * Maximum distance a pointer can move to still trigger event handlers.
 	 * If it moves beyond this limit, onOut is triggered.
 	 * Defaults to `Math.POSITIVE_INFINITY` (i.e. no limit).
 	 */
 	public var maxInputMovement:Float = Math.POSITIVE_INFINITY;
+
+	var saveWidth:Int = 0;
+
+	var saveHeight:Int = 0;
 
 	/**
 	 * Shows the current state of the button, either `FlxButton.NORMAL`,
@@ -197,7 +262,7 @@ class FlxTypedButton<T:FlxSprite> extends FlxSprite implements IFlxInput
 	 * @param   Y         The y position of the button.
 	 * @param   OnClick   The function to call whenever the button is clicked.
 	 */
-	public function new(X:Float = 0, Y:Float = 0, ?OnClick:Void->Void)
+	public function new(X:Float = 0, Y:Float = 0, ?OnClick:Void->Void):Void
 	{
 		super(X, Y);
 
@@ -208,7 +273,7 @@ class FlxTypedButton<T:FlxSprite> extends FlxSprite implements IFlxInput
 		onOver = new FlxButtonEvent();
 		onOut = new FlxButtonEvent();
 
-		status = FlxButton.NORMAL;
+		status = multiTouch ? FlxButton.NORMAL : FlxButton.HIGHLIGHT;
 
 		// Since this is a UI element, the default scrollFactor is (0, 0)
 		scrollFactor.set();
@@ -224,7 +289,6 @@ class FlxTypedButton<T:FlxSprite> extends FlxSprite implements IFlxInput
 		super.graphicLoaded();
 
 		setupAnimation('normal', FlxButton.NORMAL);
-		setupAnimation('highlight', FlxButton.HIGHLIGHT);
 		setupAnimation('pressed', FlxButton.PRESSED);
 	}
 
@@ -234,7 +298,7 @@ class FlxTypedButton<T:FlxSprite> extends FlxSprite implements IFlxInput
 	function setupAnimation(animationName:String, frameIndex:Int):Void
 	{
 		// make sure the animation doesn't contain an invalid frame
-		frameIndex = Std.int(Math.min(frameIndex, animation.frames - 1));
+		frameIndex = Std.int(Math.min(frameIndex, #if (flixel < "5.3.0") animation.frames #else animation.numFrames #end - 1));
 		animation.add(animationName, [frameIndex]);
 	}
 
@@ -243,6 +307,18 @@ class FlxTypedButton<T:FlxSprite> extends FlxSprite implements IFlxInput
 	 */
 	override public function destroy():Void
 	{
+		// Fix: Release keys when destroying the button to prevent stuck keys
+		if (status == PRESSED)
+		{
+			for (id in IDs)
+			{
+				@:privateAccess {
+					var key = FlxG.keys.getKey(id);
+					if (key != null) key.current = 0; // RELEASED
+				}
+			}
+		}
+
 		label = FlxDestroyUtil.destroy(label);
 		_spriteLabel = null;
 
@@ -263,9 +339,9 @@ class FlxTypedButton<T:FlxSprite> extends FlxSprite implements IFlxInput
 	/**
 	 * Called by the game loop automatically, handles touch over and click detection.
 	 */
-	override public function update(elapsed:Float):Void
+	override public function handleInput(elapsed:Float):Void
 	{
-		super.update(elapsed);
+		super.handleInput(elapsed);
 
 		if (visible)
 		{
@@ -278,11 +354,41 @@ class FlxTypedButton<T:FlxSprite> extends FlxSprite implements IFlxInput
 			if (lastStatus != status)
 			{
 				updateStatusAnimation();
+
+				// If the button status changed from PRESSED to something else, release the keys.
+				// This fixes the double-input issue on release while preventing stuck keys.
+				if (lastStatus == PRESSED && status != PRESSED)
+				{
+					for (id in IDs)
+					{
+						@:privateAccess {
+							var key = FlxG.keys.getKey(id);
+							if (key != null) {
+								// Only force to RELEASED if it wasn't JUST_RELEASED (to preserve justReleased state)
+								if (key.current != -1)
+									key.current = 0; // RELEASED
+							}
+						}
+					}
+				}
 				lastStatus = status;
 			}
 		}
 
-		input.update();
+		input.handleInput();
+
+		if (status == PRESSED)
+		{
+			for (id in IDs)
+			{
+				@:privateAccess {
+					var key = FlxG.keys.getKey(id);
+					if (key != null && (key.current == 0 || key.current == -1)) { // RELEASED or JUST_RELEASED
+					 	key.current = 1; // PRESSED
+					}
+				}
+			}
+		}
 	}
 
 	function updateStatusAnimation():Void
@@ -370,7 +476,10 @@ class FlxTypedButton<T:FlxSprite> extends FlxSprite implements IFlxInput
 		for (camera in cameras)
 			for (touch in FlxG.touches.list)
 				if (checkInput(touch, touch, touch.justPressedPosition, camera))
+				{
 					overlap = true;
+					return overlap;
+				}
 
 		return overlap;
 	}
@@ -406,9 +515,14 @@ class FlxTypedButton<T:FlxSprite> extends FlxSprite implements IFlxInput
 		{
 			// Allow 'swiping' to press a button (dragging it over the button while pressed)
 			if (allowSwiping && input.pressed)
+			{
+				currentInput = input;
 				onDownHandler();
+			}
 			else
+			{
 				onOverHandler();
+			}
 		}
 	}
 
@@ -419,7 +533,12 @@ class FlxTypedButton<T:FlxSprite> extends FlxSprite implements IFlxInput
 			_spriteLabel.x = (pixelPerfectPosition ? Math.floor(x) : x) + labelOffsets[status].x;
 			_spriteLabel.y = (pixelPerfectPosition ? Math.floor(y) : y) + labelOffsets[status].y;
 		}
+
+		if (saveWidth != 0 && saveHeight != 0)
+			updateLabelSize(saveWidth, saveHeight);
 	}
+
+	function updateLabelSize(owidth:Int, oheight:Int):Void {}
 
 	function updateLabelAlpha()
 	{
@@ -432,9 +551,20 @@ class FlxTypedButton<T:FlxSprite> extends FlxSprite implements IFlxInput
 	 */
 	function onUpHandler():Void
 	{
-		status = FlxButton.HIGHLIGHT;
+		status = FlxButton.NORMAL;
 		input.release();
 		currentInput = null;
+
+		for (id in IDs)
+		{
+			@:privateAccess {
+				var key = FlxG.keys.getKey(id);
+				if (key != null) {
+					key.current = -1; // JUST_RELEASED
+				}
+			}
+		}
+
 		onUp.fire(); // Order matters here, because onUp.fire() could cause a state change and destroy this object.
 	}
 
@@ -445,6 +575,18 @@ class FlxTypedButton<T:FlxSprite> extends FlxSprite implements IFlxInput
 	{
 		status = FlxButton.PRESSED;
 		input.press();
+
+		for (id in IDs)
+		{
+			@:privateAccess {
+				var key = FlxG.keys.getKey(id);
+				if (key != null) {
+					if (key.current != 1 && key.current != 2)
+						key.current = 2; // JUST_PRESSED
+				}
+			}
+		}
+
 		onDown.fire(); // Order matters here, because onDown.fire() could cause a state change and destroy this object.
 	}
 
@@ -464,6 +606,17 @@ class FlxTypedButton<T:FlxSprite> extends FlxSprite implements IFlxInput
 	{
 		status = FlxButton.NORMAL;
 		input.release();
+
+		for (id in IDs)
+		{
+			@:privateAccess {
+				var key = FlxG.keys.getKey(id);
+				if (key != null) {
+					key.current = -1; // JUST_RELEASED
+				}
+			}
+		}
+
 		onOut.fire(); // Order matters here, because onOut.fire() could cause a state change and destroy this object.
 	}
 
@@ -546,7 +699,7 @@ private class FlxButtonEvent implements IFlxDestroyable
 	 * @param   Callback   The callback function to call when this even fires.
 	 * @param   sound      The sound to play when this event fires.
 	 */
-	public function new(?Callback:Void->Void, ?sound:FlxSound)
+	public function new(?Callback:Void->Void, ?sound:FlxSound):Void
 	{
 		callback = Callback;
 
