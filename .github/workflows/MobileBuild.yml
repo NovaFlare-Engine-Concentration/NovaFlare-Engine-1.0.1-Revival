@@ -278,7 +278,7 @@ jobs:
       - name: Make IPA And iOS Zip
         run: |
           ls export/release/ios/build/ls
-          cd export/release/ios/build/Debug-iphoneos
+          cd export/release/ios/build/Release-iphoneos
           rm -rf Payload
           mkdir Payload
           mv *.app Payload
@@ -286,7 +286,7 @@ jobs:
 
       - name: Create iOS zip package
         run: |
-          cd export/release/ios/build/Debug-iphoneos/
+          cd export/release/ios/build/Release-iphoneos/
           zip -r ios.zip *.ipa
 
       - name: Upload iOS Artifact
