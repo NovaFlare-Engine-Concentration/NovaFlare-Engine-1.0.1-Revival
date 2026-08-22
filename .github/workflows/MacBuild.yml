@@ -70,9 +70,9 @@ jobs:
     
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             NEW_VERSION="${CURRENT_VERSION/-dev/-$COMMIT_SHA}"
-            haxelib run lime build mac -Dlegacy_gc_compare -Dcommit_sha=$COMMIT_SHA -Dbuild_number=$NEW_VERSION
+            haxelib run lime build mac -Dlegacy_gc_compare -Dcommit_sha=$COMMIT_SHA -Dbuild_number=$NEW_VERSION -release
           else
-            haxelib run lime build mac -Dlegacy_gc_compare -Dcommit_sha=$COMMIT_SHA -Dbuild_number=$CURRENT_VERSION
+            haxelib run lime build mac -Dlegacy_gc_compare -Dcommit_sha=$COMMIT_SHA -Dbuild_number=$CURRENT_VERSION -release
           fi
 
       - name: Create macOS zip package
