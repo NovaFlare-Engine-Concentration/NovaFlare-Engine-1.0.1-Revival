@@ -14,7 +14,6 @@ permissions:
 jobs:
   mobile-build:
     name: "Mobile Build (macOS 14)"
-    needs: update-versions
     uses: ./.github/workflows/MobileBuild.yml
     with:
       dependencies_to_update: 'all'
@@ -28,13 +27,11 @@ jobs:
 
   windows-build:
     name: "Windows Build"
-    needs: update-versions
     uses: ./.github/workflows/WindowsBuild.yml
     secrets: inherit
 
   linux-build:
     name: "Linux Build"
-    needs: update-versions
     uses: ./.github/workflows/LinuxBuild.yml
     secrets: inherit
 
