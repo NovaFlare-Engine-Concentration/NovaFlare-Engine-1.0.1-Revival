@@ -92,7 +92,7 @@ class HitboxSettingsSubState extends BaseOptionsMenu
 	override function update(elapsed:Float)
 	{
 		super.update(elapsed);
-			#if android
+			#if mobile
 		if (FlxG.android.justReleased.BACK)
 		{
 			FlxTransitionableState.skipNextTransIn = true;

@@ -25,7 +25,7 @@ import flixel.util.FlxTimer;
 import flixel.input.keyboard.FlxKey;
 import flixel.graphics.FlxGraphic;
 import Controls;
-#if android
+#if mobile
 import android.Hardware;
 #end
 
@@ -42,7 +42,7 @@ class GameplaySettingsSubState extends BaseOptionsMenu
 			'Check this if you want to play with\na controller instead of using your Keyboard.',
 			'controllerMode',
 			'bool',
-			#if android true #else false #end);
+			#if mobile true #else false #end);
 		addOption(option);
 
 		//I'd suggest using "Downscroll" as an example for making your own option since it is the simplest here
@@ -82,7 +82,7 @@ class GameplaySettingsSubState extends BaseOptionsMenu
 		addOption(option);
 		
         /*
-		#if android
+		#if mobile
 		var option:Option = new Option('Vibrations',
 			"If unchecked, your phone will not vibrate.",
 			'vibration',

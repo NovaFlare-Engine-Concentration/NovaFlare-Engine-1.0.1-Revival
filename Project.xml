@@ -136,7 +136,6 @@
 	<haxelib name="hxvlc" if="VIDEOS_ALLOWED"/> 
         <haxelib name="extension-androidtools" if="android"/>
 	<haxelib name="faxe" if='switch'/>
-	<!--<haxelib name="polymod"/> -->
 	<haxelib name="hxdiscord_rpc" if="desktop"/>
 
 	<!-- Enables a terminal log prompt on debug builds -->

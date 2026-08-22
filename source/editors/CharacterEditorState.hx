@@ -201,7 +201,7 @@ class CharacterEditorState extends MusicBeatState
 		FlxG.mouse.visible = true;
 		reloadCharacterOptions();
 
-		#if android
+		#if mobile
 		addVirtualPad(FULL, FULL);
 		addPadCamera();
 		#end
@@ -1135,43 +1135,43 @@ class CharacterEditorState extends MusicBeatState
 				return;
 			}
 
-			if (FlxG.keys.justPressed.R #if android || _virtualpad.buttonZ.justPressed #end) {
+			if (FlxG.keys.justPressed.R #if mobile || _virtualpad.buttonZ.justPressed #end) {
 				FlxG.camera.zoom = 1;
 			}
 
-			if (FlxG.keys.pressed.E #if android || _virtualpad.buttonX.pressed #end && FlxG.camera.zoom < 3) {
+			if (FlxG.keys.pressed.E #if mobile || _virtualpad.buttonX.pressed #end && FlxG.camera.zoom < 3) {
 				FlxG.camera.zoom += elapsed * FlxG.camera.zoom;
 				if(FlxG.camera.zoom > 3) FlxG.camera.zoom = 3;
 			}
-			if (FlxG.keys.pressed.Q #if android || _virtualpad.buttonY.pressed #end && FlxG.camera.zoom > 0.1) {
+			if (FlxG.keys.pressed.Q #if mobile || _virtualpad.buttonY.pressed #end && FlxG.camera.zoom > 0.1) {
 				FlxG.camera.zoom -= elapsed * FlxG.camera.zoom;
 				if(FlxG.camera.zoom < 0.1) FlxG.camera.zoom = 0.1;
 			}
 
-			if (FlxG.keys.pressed.I || FlxG.keys.pressed.J || FlxG.keys.pressed.K || FlxG.keys.pressed.L #if android || ( (_virtualpad.buttonUp.pressed || _virtualpad.buttonDown.pressed || _virtualpad.buttonLeft.pressed || _virtualpad.buttonRight.pressed   ) && _virtualpad.buttonC.pressed) #end)
+			if (FlxG.keys.pressed.I || FlxG.keys.pressed.J || FlxG.keys.pressed.K || FlxG.keys.pressed.L #if mobile || ( (_virtualpad.buttonUp.pressed || _virtualpad.buttonDown.pressed || _virtualpad.buttonLeft.pressed || _virtualpad.buttonRight.pressed   ) && _virtualpad.buttonC.pressed) #end)
 			{
 				var addToCam:Float = 500 * elapsed;
 				if (FlxG.keys.pressed.SHIFT)
 					addToCam *= 4;
 
-				if (FlxG.keys.pressed.I #if android || (_virtualpad.buttonUp.pressed && _virtualpad.buttonC.pressed) #end)
+				if (FlxG.keys.pressed.I #if mobile || (_virtualpad.buttonUp.pressed && _virtualpad.buttonC.pressed) #end)
 					camFollow.y -= addToCam;
-				else if (FlxG.keys.pressed.K #if android || (_virtualpad.buttonDown.pressed && _virtualpad.buttonC.pressed) #end)
+				else if (FlxG.keys.pressed.K #if mobile || (_virtualpad.buttonDown.pressed && _virtualpad.buttonC.pressed) #end)
 					camFollow.y += addToCam;
 
-				if (FlxG.keys.pressed.J #if android || (_virtualpad.buttonLeft.pressed && _virtualpad.buttonC.pressed) #end)
+				if (FlxG.keys.pressed.J #if mobile || (_virtualpad.buttonLeft.pressed && _virtualpad.buttonC.pressed) #end)
 					camFollow.x -= addToCam;
-				else if (FlxG.keys.pressed.L #if android || (_virtualpad.buttonRight.pressed && _virtualpad.buttonC.pressed) #end)
+				else if (FlxG.keys.pressed.L #if mobile || (_virtualpad.buttonRight.pressed && _virtualpad.buttonC.pressed) #end)
 					camFollow.x += addToCam;
 			}
 
 			if(char.animationsArray.length > 0) {
-				if (FlxG.keys.justPressed.W #if android || _virtualpad.buttonV.justPressed #end)
+				if (FlxG.keys.justPressed.W #if mobile || _virtualpad.buttonV.justPressed #end)
 				{
 					curAnim -= 1;
 				}
 
-				if (FlxG.keys.justPressed.S #if android || _virtualpad.buttonD.justPressed #end)
+				if (FlxG.keys.justPressed.S #if mobile || _virtualpad.buttonD.justPressed #end)
 				{
 					curAnim += 1;
 				}
@@ -1182,12 +1182,12 @@ class CharacterEditorState extends MusicBeatState
 				if (curAnim >= char.animationsArray.length)
 					curAnim = 0;
 
-				if (FlxG.keys.justPressed.S #if android || _virtualpad.buttonD.justPressed #end || FlxG.keys.justPressed.W #if android || _virtualpad.buttonV.justPressed #end || FlxG.keys.justPressed.SPACE)
+				if (FlxG.keys.justPressed.S #if mobile || _virtualpad.buttonD.justPressed #end || FlxG.keys.justPressed.W #if mobile || _virtualpad.buttonV.justPressed #end || FlxG.keys.justPressed.SPACE)
 				{
 					char.playAnim(char.animationsArray[curAnim].anim, true);
 					genBoyOffsets();
 				}
-				if (FlxG.keys.justPressed.T #if android || _virtualpad.buttonA.justPressed #end)
+				if (FlxG.keys.justPressed.T #if mobile || _virtualpad.buttonA.justPressed #end)
 				{
 					char.animationsArray[curAnim].offsets = [0, 0];
 
@@ -1197,15 +1197,15 @@ class CharacterEditorState extends MusicBeatState
 				}
 
 				var controlArray:Array<Bool> = [
-					FlxG.keys.justPressed.LEFT #if android || (_virtualpad.buttonLeft.justPressed && !_virtualpad.buttonC.pressed) #end,
-					FlxG.keys.justPressed.RIGHT #if android || (_virtualpad.buttonRight.justPressed && !_virtualpad.buttonC.pressed) #end,
-					FlxG.keys.justPressed.UP #if android || (_virtualpad.buttonUp.justPressed && !_virtualpad.buttonC.pressed) #end,
-					FlxG.keys.justPressed.DOWN #if android || (_virtualpad.buttonDown.justPressed && !_virtualpad.buttonC.pressed) #end
+					FlxG.keys.justPressed.LEFT #if mobile || (_virtualpad.buttonLeft.justPressed && !_virtualpad.buttonC.pressed) #end,
+					FlxG.keys.justPressed.RIGHT #if mobile || (_virtualpad.buttonRight.justPressed && !_virtualpad.buttonC.pressed) #end,
+					FlxG.keys.justPressed.UP #if mobile || (_virtualpad.buttonUp.justPressed && !_virtualpad.buttonC.pressed) #end,
+					FlxG.keys.justPressed.DOWN #if mobile || (_virtualpad.buttonDown.justPressed && !_virtualpad.buttonC.pressed) #end
 				];
 
 				for (i in 0...controlArray.length) {
 					if(controlArray[i]) {
-						var holdShift = FlxG.keys.pressed.SHIFT #if android || _virtualpad.buttonB.pressed #end;
+						var holdShift = FlxG.keys.pressed.SHIFT #if mobile || _virtualpad.buttonB.pressed #end;
 						var multiplier = 1;
 						if (holdShift)
 							multiplier = 10;
@@ -1304,7 +1304,7 @@ class CharacterEditorState extends MusicBeatState
 
 		if (data.length > 0)
 		{
-			#if android
+			#if mobile
 			SUtil.saveContent(daAnim, ".json", data);
 			#else
 			_file = new FileReference();

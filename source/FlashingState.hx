@@ -23,7 +23,7 @@ class FlashingState extends MusicBeatState
 		var bg:FlxSprite = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK);
 		add(bg);
 
-		#if android
+		#if mobile
 		warnText = new FlxText(0, 0, FlxG.width,
 			"Hey, watch out!\n
 			Be careful when you touch the phone fast!\n
@@ -45,7 +45,7 @@ class FlashingState extends MusicBeatState
 		warnText.setFormat("VCR OSD Mono", 32, FlxColor.WHITE, CENTER);
 		warnText.screenCenter(Y);
 		add(warnText);
-                #if android
+                #if mobile
                 addVirtualPad(NONE, A_B);
                 #end
 	}

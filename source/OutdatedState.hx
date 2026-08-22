@@ -35,7 +35,7 @@ class OutdatedState extends MusicBeatState
 		warnText.screenCenter(Y);
 		add(warnText);
 
-		#if android
+		#if mobile
 		addVirtualPad(NONE, A_B);
 		#end
 	}

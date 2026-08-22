@@ -178,7 +178,7 @@ class DialogueBox extends FlxSpriteGroup
 			dialogueStarted = true;
 		}
 
-		#if android
+		#if mobile
                 var justTouched:Bool = false;
 
 		for (touch in FlxG.touches.list)
@@ -190,7 +190,7 @@ class DialogueBox extends FlxSpriteGroup
 		}
 		#end
 
-		if(PlayerSettings.player1.controls.ACCEPT #if android || justTouched #end)
+		if(PlayerSettings.player1.controls.ACCEPT #if mobile || justTouched #end)
 		{
 			if (dialogueEnded)
 			{

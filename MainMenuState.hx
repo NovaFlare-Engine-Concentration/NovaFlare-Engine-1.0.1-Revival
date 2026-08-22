@@ -235,7 +235,7 @@ class MainMenuState extends MusicBeatState
 		test3.setFormat("VCR OSD Mono", 16, FlxColor.WHITE, LEFT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		add(test3);
 
-		#if android
+		#if mobile
 		addVirtualPad(NONE, A_B_E);
 		#end
 
@@ -330,7 +330,7 @@ class MainMenuState extends MusicBeatState
 	
 			
 			#if (desktop || android)
-			else if (FlxG.keys.anyJustPressed(debugKeys) #if android || _virtualpad.buttonE.justPressed #end)
+			else if (FlxG.keys.anyJustPressed(debugKeys) #if mobile || _virtualpad.buttonE.justPressed #end)
 			{
 				selectedSomethin = true;
 				MusicBeatState.switchState(new MasterEditorMenu());

@@ -412,7 +412,7 @@ class PlayState extends MusicBeatState
 		FlxG.cameras.setDefaultDrawTarget(camGame, true);
 		CustomFadeTransition.nextCamera = camOther;
 		
-		#if android
+		#if mobile
 		addAndroidControls();
 		androidc.visible = true;
 		androidc.alpha = 0.000001;
@@ -2124,7 +2124,7 @@ class PlayState extends MusicBeatState
 			callOnLuas('onStartCountdown', []);
 			return;
 		}
-         #if android
+         #if mobile
 			androidc.visible = true;
 			if (checkHitbox != true) androidc.alpha = 1;
 			//
@@ -2869,7 +2869,7 @@ class PlayState extends MusicBeatState
 			paused = false;
 			callOnLuas('onResume', []);
 			
-			#if android
+			#if mobile
 			androidc.y = 0;
 			//androidc.visible = true;
 			#end
@@ -3469,7 +3469,7 @@ class PlayState extends MusicBeatState
 			FlxG.sound.music.pause();
 			vocals.pause();
 		}
-		#if android
+		#if mobile
 			androidc.y = 720;
 			//androidc.visible = true;
 			#end
@@ -4053,7 +4053,7 @@ class PlayState extends MusicBeatState
 			}
 		}
 
-		#if android
+		#if mobile
 		androidc.alpha = 0.00001;
 		#end
 		timeBarBG.visible = false;

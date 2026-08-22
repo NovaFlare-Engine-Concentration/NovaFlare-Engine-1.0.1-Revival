@@ -133,7 +133,7 @@ class ControlsSubState extends MusicBeatSubstate {
 		}
 		changeSelection();
 
-		#if android
+		#if mobile
 		addVirtualPad(FULL, A_B);
 		#end
 	}
@@ -154,7 +154,7 @@ class ControlsSubState extends MusicBeatSubstate {
 
 			if (controls.BACK) {
 				ClientPrefs.reloadControls();
-				#if android
+				#if mobile
 				FlxTransitionableState.skipNextTransOut = true;
 				FlxG.resetState();
 				#else

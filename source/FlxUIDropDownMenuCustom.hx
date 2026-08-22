@@ -441,7 +441,7 @@ function getVirtualPad():FlxVirtualPad {
 		#if FLX_MOUSE
 		if (dropPanel.visible)
 		{
-			#if android //thanks gamerbross -saw
+			#if mobile //thanks gamerbross -saw
 			if(list.length > 1 && canScroll) 
 			{
 				for (swipe in FlxG.swipes)
@@ -450,14 +450,14 @@ function getVirtualPad():FlxVirtualPad {
 					var g = swipe.startPosition.y - swipe.endPosition.y;
 					if (25 <= Math.sqrt(f * f + g * g))
 					{
-						if ((-45 <= swipe.startPosition.degreesTo(swipe.endPosition) && 45 >= swipe.startPosition.degreesTo(swipe.endPosition)) #if android || getVirtualPad().buttonCEDown_M.pressed #end || FlxG.mouse.wheel > 0 || FlxG.keys.justPressed.UP)
+						if ((-45 <= swipe.startPosition.degreesTo(swipe.endPosition) && 45 >= swipe.startPosition.degreesTo(swipe.endPosition)) #if mobile || getVirtualPad().buttonCEDown_M.pressed #end || FlxG.mouse.wheel > 0 || FlxG.keys.justPressed.UP)
 						{
 							// Go down
 							currentScroll++;
 							if(currentScroll >= list.length) currentScroll = list.length-1;
 							updateButtonPositions();
 						}
-						else if (-180 <= swipe.startPosition.degreesTo(swipe.endPosition) && -135 >= swipe.startPosition.degreesTo(swipe.endPosition) || (135 <= swipe.startPosition.degreesTo(swipe.endPosition) && 180 >= swipe.startPosition.degreesTo(swipe.endPosition)) #if android || getVirtualPad().buttonCEDown_M.pressed #end || FlxG.mouse.wheel < 0 || FlxG.keys.justPressed.DOWN)
+						else if (-180 <= swipe.startPosition.degreesTo(swipe.endPosition) && -135 >= swipe.startPosition.degreesTo(swipe.endPosition) || (135 <= swipe.startPosition.degreesTo(swipe.endPosition) && 180 >= swipe.startPosition.degreesTo(swipe.endPosition)) #if mobile || getVirtualPad().buttonCEDown_M.pressed #end || FlxG.mouse.wheel < 0 || FlxG.keys.justPressed.DOWN)
 						{
 							// Go up
 							--currentScroll;

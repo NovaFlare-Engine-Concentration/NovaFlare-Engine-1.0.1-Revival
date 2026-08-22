@@ -97,12 +97,6 @@ jobs:
           haxelib setup ~/haxelib
           haxelib --global install hmm --quiet
           haxelib --global run hmm install
-          # A cached haxelib git checkout can drift to the upstream default
-          # branch even when hmm.json pins a commit. Restore every immutable
-          # dependency plus NovaFlare's compatibility fork before compilation.
-          for library in polymod thx.core thx.semver FlxPartialSound; do
-            haxelib --global run hmm reinstall --force "$library"
-          done
           
           if [ "${{ steps.android_cache.outputs.update_libs }}" == "true" ]; then
             if [ "${{ steps.android_cache.outputs.skip_cache }}" == "true" ]; then
@@ -258,10 +252,6 @@ jobs:
           haxelib setup ~/haxelib
           haxelib --global install hmm --quiet
           haxelib --global run hmm install
-          # Restore pinned commits after haxelib has touched cached git clones.
-          for library in polymod thx.core thx.semver FlxPartialSound; do
-            haxelib --global run hmm reinstall --force "$library"
-          done
           
           if [ "${{ steps.ios_cache.outputs.update_libs }}" == "true" ]; then
             if [ "${{ steps.ios_cache.outputs.skip_cache }}" == "true" ]; then
