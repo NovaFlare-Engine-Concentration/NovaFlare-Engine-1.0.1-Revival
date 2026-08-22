@@ -69,7 +69,7 @@ jobs:
       - name: Create Windows zip package
         shell: pwsh
         run: | 
-          cd export\legacy-gc\windows\bin
+          cd export\release\windows\bin
           Compress-Archive -Path * -DestinationPath windows.zip
 
       - name: Upload Artifact
@@ -77,5 +77,5 @@ jobs:
         uses: actions/upload-artifact@main
         with:
           name: windowsBuild
-          path: export\legacy-gc\windows\bin\windows.zip
+          path: export\release\windows\bin\windows.zip
           if-no-files-found: error

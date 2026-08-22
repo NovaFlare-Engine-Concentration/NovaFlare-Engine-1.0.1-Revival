@@ -137,7 +137,7 @@ jobs:
 
       - name: Create Android zip package
         run: |
-          cd export/release/android/bin/app/build/outputs/apk/release/
+          cd export/release/android/bin/app/build/outputs/apk/debug/
           zip -r android.zip *.apk
 
       - name: Create Haxelib zip package
@@ -148,7 +148,7 @@ jobs:
         uses: actions/upload-artifact@main
         with:
           name: androidBuild
-          path: export/release/android/bin/app/build/outputs/apk/release/android.zip
+          path: export/release/android/bin/app/build/outputs/apk/debug/android.zip
           if-no-files-found: error
 
       - name: Upload Haxelib Artifact
@@ -273,7 +273,8 @@ jobs:
         
       - name: Make IPA And iOS Zip
         run: |
-          cd export/release/ios/build/Release-iphoneos
+          ls export/release/ios/build/ls
+          cd export/release/ios/build/Debug-iphoneos
           rm -rf Payload
           mkdir Payload
           mv *.app Payload
@@ -281,7 +282,7 @@ jobs:
 
       - name: Create iOS zip package
         run: |
-          cd export/release/ios/build/Release-iphoneos/
+          cd export/release/ios/build/Debug-iphoneos/
           zip -r ios.zip *.ipa
 
       - name: Upload iOS Artifact
