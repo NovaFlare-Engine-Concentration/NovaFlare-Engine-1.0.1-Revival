@@ -277,7 +277,6 @@ jobs:
         
       - name: Make IPA And iOS Zip
         run: |
-          ls export/release/ios/build/ls
           cd export/release/ios/build/Release-iphoneos
           rm -rf Payload
           mkdir Payload
