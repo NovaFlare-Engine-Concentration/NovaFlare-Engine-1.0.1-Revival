@@ -111,6 +111,8 @@ class Main extends Sprite
 				FlxG.game.stage.window.frameRate = FlxG.updateFramerate;
 		}
 
+		FlxG.mouse.visible = #if desktop true #else false;
+
 		fpsVar = new FPS(10, 3, 0xFFFFFF);
 		addChild(fpsVar);
 		Lib.current.stage.align = "tl";

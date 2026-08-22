@@ -31,7 +31,7 @@
       "type": "git",
       "dir": null,
       "ref": "dev",
-      "url": "https://github.com/MaoPou/flixel-ui-beauty"
+      "url": "https://github.com/NovaFlare-Engine-haxelib/flixel-ui"
     },
     {
       "name": "flixel-tools",
@@ -57,7 +57,7 @@
       "type": "git",
       "dir": null,
       "ref": "main",
-      "url": "https://github.com/beihu235/SScript-8.1.6"
+      "url": "https://github.com/NovaFlare-Engine-haxelib/SScript-8.1.6/"
     },
     {
       "name": "hscript",
@@ -91,7 +91,7 @@
       "type": "git",
       "dir": null,
       "ref": "dev",
-      "url": "https://github.com/ShadowMario/flxanimate.git"
+      "url": "https://github.com/NovaFlare-Engine-haxelib/flxanimate-1.0.1/"
     },
     {
       "name": "extension-androidtools",
@@ -105,7 +105,7 @@
       "type": "git",
       "dir": null,
       "ref": "main",
-      "url": "https://github.com/beihu235/funkVis-FrequencyFixed"
+      "url": "https://github.com/NovaFlare-Engine-haxelib/funkVis-FrequencyFixed"
     },
     {
       "name": "hxCodec",
