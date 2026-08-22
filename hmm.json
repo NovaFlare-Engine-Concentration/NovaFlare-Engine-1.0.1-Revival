@@ -30,7 +30,7 @@
       "name": "flixel-ui",
       "type": "git",
       "dir": null,
-      "ref": "dev",
+      "ref": "main",
       "url": "https://github.com/NovaFlare-Engine-haxelib/flixel-ui"
     },
     {
