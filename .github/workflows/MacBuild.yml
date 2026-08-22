@@ -77,7 +77,7 @@ jobs:
 
       - name: Create macOS zip package
         run: |
-          cd export/legacy-gc/macos/bin
+          cd export/release/macos/bin
           zip -r macOS-${{matrix.version}}.zip .
 
       - name: Upload Artifact
@@ -85,5 +85,5 @@ jobs:
         uses: actions/upload-artifact@main
         with:
           name: macOSBuild-${{matrix.version}}
-          path: export/legacy-gc/macos/bin/macOS-${{matrix.version}}.zip
+          path: export/release/macos/bin/macOS-${{matrix.version}}.zip
           if-no-files-found: error

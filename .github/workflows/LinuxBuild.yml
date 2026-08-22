@@ -57,11 +57,11 @@ jobs:
           
       - name: Create Linux zip package
         run: |
-          cd export/legacy-gc/linux/bin/
+          cd export/release/linux/bin/
           zip -r linux.zip .
 
       - name: Uploading artifact
         uses: actions/upload-artifact@v4
         with:
           name: LinuxBuild
-          path: export/legacy-gc/linux/bin/linux.zip
+          path: export/release/linux/bin/linux.zip

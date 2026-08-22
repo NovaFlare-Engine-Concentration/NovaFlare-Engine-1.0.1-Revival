@@ -89,7 +89,7 @@ jobs:
             cache-build-Android
           path: |
             .haxelib/
-            export/legacy-gc/android/
+            export/release/android/
             ~/.gradle
             
       - name: Install Android Libraries
@@ -143,7 +143,7 @@ jobs:
 
       - name: Create Android zip package
         run: |
-          cd export/legacy-gc/android/bin/app/build/outputs/apk/release/
+          cd export/release/android/bin/app/build/outputs/apk/release/
           zip -r android.zip *.apk
 
       - name: Create Haxelib zip package
@@ -154,7 +154,7 @@ jobs:
         uses: actions/upload-artifact@main
         with:
           name: androidBuild
-          path: export/legacy-gc/android/bin/app/build/outputs/apk/release/android.zip
+          path: export/release/android/bin/app/build/outputs/apk/release/android.zip
           if-no-files-found: error
 
       - name: Upload Haxelib Artifact
@@ -190,7 +190,7 @@ jobs:
           key: cache-build-Android
           path: |
             .haxelib/
-            export/legacy-gc/android/
+            export/release/android/
             ~/.gradle
           
   iOS:
@@ -251,7 +251,7 @@ jobs:
             cache-build-iOS
           path: |
             .haxelib/
-            export/legacy-gc/ios/
+            export/release/ios/
           
       - name: Install iOS Libraries
         run: |
@@ -283,7 +283,7 @@ jobs:
         
       - name: Make IPA And iOS Zip
         run: |
-          cd export/legacy-gc/ios/build/Release-iphoneos
+          cd export/release/ios/build/Release-iphoneos
           rm -rf Payload
           mkdir Payload
           mv *.app Payload
@@ -291,14 +291,14 @@ jobs:
 
       - name: Create iOS zip package
         run: |
-          cd export/legacy-gc/ios/build/Release-iphoneos/
+          cd export/release/ios/build/Release-iphoneos/
           zip -r ios.zip *.ipa
 
       - name: Upload iOS Artifact
         uses: actions/upload-artifact@main
         with:
           name: iOSBuild
-          path: export/legacy-gc/ios/build/Release-iphoneos/ios.zip
+          path: export/release/ios/build/Release-iphoneos/ios.zip
           if-no-files-found: error
 
       - name: Clear old iOS cache
@@ -327,4 +327,4 @@ jobs:
           key: cache-build-iOS
           path: |
             .haxelib/
-            export/legacy-gc/ios/
+            export/release/ios/
